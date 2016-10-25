@@ -4,7 +4,6 @@
     dom = {};
 
   dom.DOM_VK_DELETE = 8;
-  dom.DOM_VK_DELETE_KEY = 46;
   dom.DOM_VK_LEFT = 37;
   dom.DOM_VK_UP = 38;
   dom.DOM_VK_RIGHT = 39;
@@ -186,7 +185,7 @@
       } catch(e){}
 
       // Handling jQuery bug (which may be fixed in the official release later)
-      // http://bugs.jquery.com/ticket/13401 
+      // http://bugs.jquery.com/ticket/13401
       if(ret.length === 0){
         $this.remove();
       }
@@ -757,24 +756,24 @@
     if (_browser) {
       return $.extend({}, _browser);
     }
-		
+
     _browser = (function() {
       function uaMatch( ua ) {
         ua = ua.toLowerCase();
-	
+
         var match = /(chrome)[ \/]([\w.]+)/.exec( ua ) ||
           /(webkit)[ \/]([\w.]+)/.exec( ua ) ||
           /(opera)(?:.*version|)[ \/]([\w.]+)/.exec( ua ) ||
           /(msie) ([\w.]+)/.exec( ua ) ||
           ua.indexOf("compatible") < 0 && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec( ua ) ||
           [];
-	
+
 	return {
           browser: match[ 1 ] || "",
           version: match[ 2 ] || "0"
         };
       }
-	
+
       var ua = navigator.userAgent.toLowerCase(),
           matched = uaMatch(ua),
           browser = {
@@ -782,13 +781,13 @@
             version : 0,
             msie: false
           };
-	
+
       if ( matched.browser ) {
         browser[ matched.browser ] = true;
         browser.version = matched.version || 0;
         browser.type = matched.browser;
       }
-	
+
       // Chrome is Webkit, but Webkit is also Safari.
       if ( browser.chrome ) {
         browser.webkit = true;
@@ -800,12 +799,12 @@
       }
       browser.firefox = (/firefox/.test(ua) == true);
       if (! browser.msie) {
-        browser.msie = !! /trident/.test(ua); 
+        browser.msie = !! /trident/.test(ua);
       }
-			
+
       return browser;
     })();
-    
+
     return $.extend({}, _browser);
   };
   dom.getBrowserType = function () {

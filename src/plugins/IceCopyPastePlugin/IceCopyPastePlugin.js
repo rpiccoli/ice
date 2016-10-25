@@ -116,12 +116,7 @@ IceCopyPastePlugin.prototype = {
     range.selectNodeContents(div);
     this._ice.selection.addRange(range);
 
-    div.onpaste = function(event) {
-      setTimeout(function(){
-        self.handlePasteValue(stripTags);
-      },0);
-       event.stopPropagation();
-    };
+    self.handlePasteValue(stripTags);
 
     div.focus();
     return true;
