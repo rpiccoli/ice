@@ -1,0 +1,124 @@
+{
+    plugins: [
+        "advlist autolink lists link suplink image figure charmap print preview anchor",
+        "searchreplace visualblocks code fullscreen",
+        "insertdatetime media table contextmenu paste rdface ice alfrescoautosave hr"
+    ],
+    menu: {
+        file   : {title : 'File'  , items : 'print restoredraft'},
+        edit   : {title : 'Edit'  , items : 'undo redo | cut copy paste pastetext | selectall | searchreplace'},
+        insert : {title : 'Insert', items : 'link image figure | charmap hr anchor pagebreak inserttime nonbreaking'},
+        view   : {title : 'View'  , items : 'fullscreen preview visualblocks togglefootnotes code'},
+        format : {title : 'Format', items : 'bold italic underline strikethrough superscript subscript | formats | removeformat'},
+        table  : {title : 'Table' , items : 'inserttable tableprops deletetable | cell row column'},
+    },
+    toolbar: "undo redo | styleselect | bold italic strikethrough superscript subscript hr | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image figure | rdfaceMain | ice_togglechanges ice_toggleshowchanges iceacceptall icerejectall iceaccept icereject",
+    ice: {
+        user: { name: Ixxus.userName, id: Ixxus.userId },
+        titleDateFormat: "m/d/Y h:ia",
+        mergeBlocks: false,
+        preserveOnPaste: "p,a[href],i,em,b,span,section,div,blockquote",
+        deleteTag: "del",
+        insertTag: "ins",
+        isTracking: false
+    },
+    content_css: Alfresco.constants.PROXY_URI + "ixxus/config-tinymce/ice/css/ice.css," + Ixxus.tinyMceCss,
+    setup: function(editor) {
+        var stopCleanup = true;
+        var dragDrapActivated = false;
+        var isTracking = false;
+		var htmlTags = ["p", "h1", "h2", "h3", "h4", "h5"];
+         
+        Ixxus.tinyMceSetup(editor);
+         
+        editor.on('dragstart', function(e) {
+            if (editor.changeEditor.isTracking) {
+                console.info("Some dragstarts: " + e.which);
+                var parentOuterHTML = e.target.parentNode.parentNode.outerHTML;
+                if(parentOuterHTML.indexOf('body') !== -1 ) {
+                    parentOuterHTML = e.target.parentNode.outerHTML;
+                }
+                if(parentOuterHTML.indexOf('ins class="ins') === -1 && parentOuterHTML.indexOf('del class="del') === -1 ) {
+                    editor.execCommand('icedelete', e.target);
+                    dragDropActivated = true;
+                }
+                isTracking = true;
+            } else {
+                isTracking = false;
+            }
+        });
+ 
+        editor.on('BeforeSetContent', function (e) {
+            if (isTracking) {
+                if (typeof(dragDropActivated) != "undefined" && dragDropActivated === true) {
+                  console.log("Content dropped deactivating" +e.target.selection.getNode());
+				  var isPlainText = true;
+				  for (var i in htmlTags){
+						if (e.content.indexOf('<' + htmlTags[i] + '>') != -1) {							  
+							  e.content = e.content.replace(new RegExp("<"+htmlTags[i]+">", 'g'), buildInsertText(htmlTags[i]));
+							  e.content.replace(new RegExp('</' + htmlTags[i] + '>', 'g'), '</ins></' + htmlTags[i] + '>');
+							  isPlainText = false;
+					    }	
+				  }	
+				  
+				  if (isPlainText) {
+                      editor.execCommand('iceinsert');
+                  }
+                  dragDropActivated = false;
+                }
+            }
+        });
+ 
+        function buildInsertText(tag) {
+            var timestamp = new Date().getTime();
+            return "<" + tag + "><ins class='ins " + editor.changeEditor.getUserStyle(Ixxus.userId) + "' title='Inserted by " + Ixxus.userName + " - "  + ice.dom.date("m/d/Y h:ia ", timestamp) + " ' data-cid='" +
+            editor.changeEditor.getNewChangeId()+ "' data-userid='" + Ixxus.userId + "' data-username='" + Ixxus.userName + "' data-time='" + timestamp + "'>";
+        }
+         
+        editor.on('keydown', function(e) {
+            // all action in this if are performed only if track changes are enabled.
+            if (editor.changeEditor.isTracking) {
+                // catch the delete key - true: deletes to right
+                if (e.keyCode == 46) {
+                     e.preventDefault();
+                     editor.changeEditor.deleteContents(true);
+                }
+                 
+                var isIEx = ((navigator.appName == 'Microsoft Internet Explorer') ||  navigator.userAgent.match(/Trident/) || navigator.userAgent.match(/rv 11/));
+                if (!isIEx) {
+                    editor.on('change', function(e) {
+                        if(!stopCleanup) {
+                            stopCleanup = true;
+                            e.preventDefault();
+                            editor.execCommand("mceCleanUp");
+                        }
+                    });
+                }
+                 
+                // when cmd key (mac) or ctrl key is pressed then the code below the if is checked.
+                if (e.metaKey !== true && e.ctrlKey !== true) {
+                    return;
+                }
+                // if v key is pressed then execute paste.
+                if (e.keyCode == 86) {
+                    editor.execCommand('iceinsert');
+                    stopCleanup = false;
+                }
+            }
+        });
+    },
+    paste_preprocess: function(plugin, args) {     
+        if (editor.changeEditor.isTracking) {
+            var timestamp = new Date().getTime();
+			var pasteProcess = args.content;
+			var htmlTags = ["p", "h1", "h2", "h3", "h4", "h5"];
+			for (var i in htmlTags){
+				 pasteProcess = pasteProcess.replace(new RegExp("<"+htmlTags[i]+">", 'g'),  "<"+ htmlTags[i] + "><ins class='ins " + editor.changeEditor.getUserStyle(Ixxus.userId) + "' title='Inserted by " + Ixxus.userName + " - "  + ice.dom.date("m/d/Y h:ia ", timestamp) + " ' data-cid='" +
+                                editor.changeEditor.getNewChangeId()+ "' data-userid='" + Ixxus.userId + "' data-username='" + Ixxus.userName + "' data-time='" + timestamp + "'>");
+				 pasteProcess = pasteProcess.replace(new RegExp('</' + htmlTags[i] + '>', 'g'), '</ins></' + htmlTags[i] + '>');
+			}		 
+           
+            args.content = pasteProcess;
+        }
+    }
+}
